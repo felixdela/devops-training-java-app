@@ -9,6 +9,17 @@ pipeline {
       }
     }
 
+    stage('Lint') {
+      agent {
+        docker {
+          image 'maven:3.8.6-openjdk-11-slim'
+        }
+      }
+      steps {
+        sh 'make lint'
+      }
+    }
+
     stage('Test') {
       agent {
         docker {
@@ -16,8 +27,9 @@ pipeline {
         }
       }
       steps {
-        sh 'mvn test'
+        sh 'make test'
       }
     }
   }
 }
+
