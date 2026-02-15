@@ -36,7 +36,19 @@ pipeline {
         }
       }
     }
+
+    stage('Build image') {
+      steps {
+        script {
+          def version = env.BUILD_NUMBER
+          def image = docker.build(
+            "devops-training-java-app:${version}",
+            "--build-arg VERSION=${version} -f devops/Dockerfile ."
+          )
+          echo "Imagen construida: ${image.imageName()}"
+        }
+      }
+    }
   }
 }
-
 
