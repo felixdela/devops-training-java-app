@@ -14,7 +14,18 @@ pipeline {
 			description: 'Forzar ejecución del stage CD'
 		)	
 	}
+	
   stages {
+		stage('Build CI image') {
+			steps {
+			  script {
+			    docker.build(
+			env.CI_IMAGE_NAME,
+			"-f devops/ci.Dockerfile ."
+			    )
+			  }
+			}
+		}
     stage('Info') {
       steps {
         echo "Job: ${env.JOB_NAME}"
@@ -26,7 +37,6 @@ pipeline {
       steps {
         script {
           runInDocker('maven:3.8.6-openjdk-11-slim') {
-            sh 'apt-get update && apt-get install -y make'
             sh 'make lint'
           }
         }
@@ -37,7 +47,6 @@ pipeline {
       steps {
         script {
           runInDocker('maven:3.8.6-openjdk-11-slim') {
-            sh 'apt-get update && apt-get install -y make'
             sh 'make test'
           }
         }
