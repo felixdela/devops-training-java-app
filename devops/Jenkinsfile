@@ -6,26 +6,33 @@ def runInDocker(String image, Closure body) {
 
 pipeline {
   agent any
-  
+
   parameters {
-    booleanParam (
-    	name: 'RUN_CD',
-			defaultValue: false,
-			description: 'Forzar ejecución del stage CD'
-		)	
-	}
-	
+    booleanParam(
+      name: 'RUN_CD',
+      defaultValue: false,
+      description: 'Forzar ejecución del stage CD'
+    )
+  }
+
   stages {
-		stage('Build CI image') {
-			steps {
-			  script {
-			    docker.build(
-			env.CI_IMAGE_NAME,
-			"-f devops/ci.Dockerfile ."
-			    )
-			  }
-			}
-		}
+
+    stage('Build CI image') {
+      steps {
+        script {
+          // Imagen CI fija para aprovechar cache Docker
+          env.CI_IMAGE_NAME = "devops-training-java-app-ci:latest"
+
+          docker.build(
+            env.CI_IMAGE_NAME,
+            "-f devops/ci.Dockerfile ."
+          )
+
+          echo "Imagen CI construida: ${env.CI_IMAGE_NAME}"
+        }
+      }
+    }
+
     stage('Info') {
       steps {
         echo "Job: ${env.JOB_NAME}"
@@ -36,7 +43,7 @@ pipeline {
     stage('Lint') {
       steps {
         script {
-          runInDocker('maven:3.8.6-openjdk-11-slim') {
+          runInDocker(env.CI_IMAGE_NAME) {
             sh 'make lint'
           }
         }
@@ -46,12 +53,13 @@ pipeline {
     stage('Test') {
       steps {
         script {
-          runInDocker('maven:3.8.6-openjdk-11-slim') {
+          runInDocker(env.CI_IMAGE_NAME) {
             sh 'make test'
           }
         }
       }
     }
+
     stage('Build image') {
       steps {
         script {
@@ -64,6 +72,7 @@ pipeline {
         }
       }
     }
+
     stage('CD') {
       when {
         anyOf {
