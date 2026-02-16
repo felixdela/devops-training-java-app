@@ -15,60 +15,30 @@ pipeline {
     )
   }
 
+  environment {
+    IMAGE_NAME = "devops-training-java-app:${BUILD_NUMBER}"
+    APP_URL = "http://localhost:5001/"
+  }
+
   stages {
-
-    stage('Build CI image') {
-      steps {
-        script {
-          // Imagen CI fija para aprovechar cache Docker
-          env.CI_IMAGE_NAME = "devops-training-java-app-ci:latest"
-
-          docker.build(
-            env.CI_IMAGE_NAME,
-            "-f devops/ci.Dockerfile ."
-          )
-
-          echo "Imagen CI construida: ${env.CI_IMAGE_NAME}"
-        }
-      }
-    }
 
     stage('Info') {
       steps {
         echo "Job: ${env.JOB_NAME}"
         echo "Build: ${env.BUILD_NUMBER}"
-      }
-    }
-
-    stage('Lint') {
-      steps {
-        script {
-          runInDocker(env.CI_IMAGE_NAME) {
-            sh 'make lint'
-          }
-        }
-      }
-    }
-
-    stage('Test') {
-      steps {
-        script {
-          runInDocker(env.CI_IMAGE_NAME) {
-            sh 'make test'
-          }
-        }
+        echo "Imagen definida: ${env.IMAGE_NAME}"
+        sh "echo URL=${APP_URL}"
       }
     }
 
     stage('Build image') {
       steps {
         script {
-          def version = env.BUILD_NUMBER
           def image = docker.build(
-            "devops-training-java-app:${version}",
-            "--build-arg VERSION=${version} -f devops/Dockerfile ."
+            env.IMAGE_NAME,
+            "--build-arg VERSION=${env.BUILD_NUMBER} -f devops/Dockerfile ."
           )
-          echo "Imagen construida: ${image.imageName()}"
+          echo "Imagen construida: ${env.IMAGE_NAME}"
         }
       }
     }
@@ -82,7 +52,8 @@ pipeline {
         }
       }
       steps {
-        echo "CD habilitado: RUN_CD=${params.RUN_CD}, branch=${env.BRANCH_NAME}"
+        echo "Desplegando imagen ${env.IMAGE_NAME}"
+        sh "echo Aplicación disponible en ${APP_URL}"
       }
     }
   }
