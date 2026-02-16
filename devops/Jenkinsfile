@@ -1,12 +1,38 @@
+// ===============================
+// Función reutilizable para ejecutar comandos dentro de Docker
+// ===============================
 def runInDocker(String image, Closure body) {
   docker.image(image).inside {
     body()
   }
 }
 
+// ===============================
+// Mini librería para flujo Compose (up → test → down)
+// ===============================
+def composeUpTestDown(Map args) {
+  try {
+    if (args.up) {
+      sh args.up
+    }
+
+    if (args.test) {
+      sh args.test
+    }
+
+  } finally {
+    if (args.down) {
+      sh "${args.down} || true"
+    }
+  }
+}
+
 pipeline {
   agent any
 
+  // ===============================
+  // Parámetros del pipeline
+  // ===============================
   parameters {
     booleanParam(
       name: 'RUN_CD',
@@ -15,26 +41,84 @@ pipeline {
     )
   }
 
+  // ===============================
+  // Variables globales de entorno
+  // ===============================
   environment {
     IMAGE_NAME = "devops-training-java-app:${BUILD_NUMBER}"
+    CI_IMAGE_NAME = "devops-training-java-app-ci:latest"
     APP_URL = "http://localhost:5001/"
   }
 
   stages {
 
+    // ==========================================================
+    // Stage 1 - Info
+    // Muestra información del job y variables de entorno
+    // ==========================================================
     stage('Info') {
       steps {
         echo "Job: ${env.JOB_NAME}"
         echo "Build: ${env.BUILD_NUMBER}"
-        echo "Imagen definida: ${env.IMAGE_NAME}"
+        echo "Imagen aplicación: ${env.IMAGE_NAME}"
         sh "echo URL=${APP_URL}"
       }
     }
 
+    // ==========================================================
+    // Stage 2 - Build CI image
+    // Construye la imagen de entorno CI con make instalado
+    // Solo se construye una vez y luego usa caché Docker
+    // ==========================================================
+    stage('Build CI image') {
+      steps {
+        script {
+          docker.build(
+            env.CI_IMAGE_NAME,
+            "-f devops/ci.Dockerfile ."
+          )
+          echo "Imagen CI construida: ${env.CI_IMAGE_NAME}"
+        }
+      }
+    }
+
+    // ==========================================================
+    // Stage 3 - Lint
+    // Ejecuta análisis estático usando la imagen CI
+    // ==========================================================
+    stage('Lint') {
+      steps {
+        script {
+          runInDocker(env.CI_IMAGE_NAME) {
+            sh 'make lint'
+          }
+        }
+      }
+    }
+
+    // ==========================================================
+    // Stage 4 - Test
+    // Ejecuta tests unitarios usando la imagen CI
+    // ==========================================================
+    stage('Test') {
+      steps {
+        script {
+          runInDocker(env.CI_IMAGE_NAME) {
+            sh 'make test'
+          }
+        }
+      }
+    }
+
+    // ==========================================================
+    // Stage 5 - Build image
+    // Construye la imagen Docker final de la aplicación
+    // Genera el artefacto desplegable
+    // ==========================================================
     stage('Build image') {
       steps {
         script {
-          def image = docker.build(
+          docker.build(
             env.IMAGE_NAME,
             "--build-arg VERSION=${env.BUILD_NUMBER} -f devops/Dockerfile ."
           )
@@ -43,6 +127,14 @@ pipeline {
       }
     }
 
+    // ==========================================================
+    // Stage 6 - CD
+    // Simula despliegue local con docker compose
+    // Se ejecuta si:
+    //   - RUN_CD=true
+    //   - rama develop
+    //   - rama master
+    // ==========================================================
     stage('CD') {
       when {
         anyOf {
@@ -52,20 +144,29 @@ pipeline {
         }
       }
       steps {
-        echo "Desplegando imagen ${env.IMAGE_NAME}"
-        sh "echo Aplicación disponible en ${APP_URL}"
+        script {
+          composeUpTestDown(
+            up: 'docker compose up -d',
+            test: '''
+              sleep 5
+              docker compose logs app
+            ''',
+            down: 'docker compose down --volumes'
+          )
+        }
       }
     }
   }
- post {
+
+  // ==========================================================
+  // Hooks post del pipeline
+  // Limpieza y reporting
+  // ==========================================================
+  post {
 
     always {
       echo "Limpieza de recursos..."
-
-      // Parar contenedores aunque hayan fallado
       sh 'docker compose down --volumes || true'
-
-      // Borrar imagen construida
       sh 'docker rmi ${IMAGE_NAME} || true'
     }
 
@@ -75,11 +176,10 @@ pipeline {
 
     failure {
       echo 'FAILURE'
-
-      // Mostrar logs si algo ha fallado
       sh 'docker compose logs || true'
     }
   }
-}	
+}
+
 
 
