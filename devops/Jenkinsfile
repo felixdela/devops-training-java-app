@@ -57,5 +57,29 @@ pipeline {
       }
     }
   }
-}
+ post {
+
+    always {
+      echo "Limpieza de recursos..."
+
+      // Parar contenedores aunque hayan fallado
+      sh 'docker compose down --volumes || true'
+
+      // Borrar imagen construida
+      sh 'docker rmi ${IMAGE_NAME} || true'
+    }
+
+    success {
+      echo 'SUCCESS'
+    }
+
+    failure {
+      echo 'FAILURE'
+
+      // Mostrar logs si algo ha fallado
+      sh 'docker compose logs || true'
+    }
+  }
+}	
+
 
