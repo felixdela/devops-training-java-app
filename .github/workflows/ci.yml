@@ -24,12 +24,17 @@ on:
         type: boolean
 
 jobs:
-  dummy:
+  ci:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Mostrar contexto
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Info
         run: |
-          echo "Repo: $GITHUB_REPOSITORY"
-          echo "Ref:  $GITHUB_REF"
-          echo "Branch: $GITHUB_REF_NAME"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit SHA: ${{ github.sha }}"
+          echo "Runner OS: ${{ runner.os }}"
+          echo "Runner Name: ${{ runner.name }}"
 
