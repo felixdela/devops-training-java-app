@@ -23,18 +23,29 @@ on:
         default: false
         type: boolean
 
+# Variables a nivel de WORKFLOW
+env:
+  IMAGE_NAME: devops-training-java-app
+  APP_URL: https://dev.example.com
+
 jobs:
   ci:
     runs-on: ubuntu-latest
+
+    # Sobrescribimos una variable a nivel de JOB
+    env:
+      APP_URL: https://staging.example.com
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Info
+      - name: Mostrar variables con env context
         run: |
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Commit SHA: ${{ github.sha }}"
-          echo "Runner OS: ${{ runner.os }}"
-          echo "Runner Name: ${{ runner.name }}"
+          echo "Image name (context): ${{ env.IMAGE_NAME }}"
+          echo "App URL (context): ${{ env.APP_URL }}"
 
+      - name: Mostrar variables en shell
+        run: |
+          echo "Image name (shell): $IMAGE_NAME"
+          echo "App URL (shell): $APP_URL"
