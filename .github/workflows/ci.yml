@@ -2,7 +2,6 @@
 name: CI (dummy)
 
 on:
-
   push:
     branches:
       - '**'
@@ -19,7 +18,6 @@ on:
         required: false
         default: false
         type: boolean
-
       DEPLOY_ENV:
         description: "Environment to deploy"
         required: false
@@ -85,6 +83,7 @@ jobs:
             -w /app \
             ci-java \
             make lint test
+
       - name: Build application Docker image
-	run: |
-	  docker build -t $IMAGE_NAME .
+        run: |
+          docker build -t $IMAGE_NAME .
