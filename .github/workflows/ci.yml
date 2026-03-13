@@ -1,11 +1,8 @@
 # Práctica 3 - GitHub Actions (dummy)
-#
-# Punto de partida: workflow mínimo para validar que Actions funciona en el repo.
-# En la Práctica 3 irás ampliando este workflow para llegar a CI/CD.
-
 name: CI (dummy)
 
 on:
+
   push:
     branches:
       - '**'
@@ -40,6 +37,9 @@ jobs:
   ci:
     runs-on: ubuntu-latest
 
+    # NUEVO → seleccionar environment según rama
+    environment: ${{ github.ref_name == 'master' && 'PRO' || 'DEV' }}
+
     # Sobrescribimos variable para ver precedencia
     env:
       APP_URL: https://staging.example.com
@@ -64,3 +64,16 @@ jobs:
         run: |
           echo "RUN_CD: ${{ inputs.RUN_CD }}"
           echo "DEPLOY_ENV: ${{ inputs.DEPLOY_ENV }}"
+
+      # → Usar variables del environment
+      - name: Mostrar variables del environment
+        run: |
+          echo "Registry host: ${{ vars.REGISTRY_HOST }}"
+          echo "Artifactory URL: ${{ vars.ARTIFACTORY_URL }}"
+
+      # → Usar secret del environment
+      - name: Usar secret (ejemplo)
+        run: |
+          echo "Registry user configurado correctamente"
+          # NO imprimir passwords
+          echo "User: ${{ secrets.REGISTRY_USER }}"
