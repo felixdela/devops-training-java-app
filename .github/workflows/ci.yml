@@ -77,3 +77,14 @@ jobs:
           echo "Registry user configurado correctamente"
           # NO imprimir passwords
           echo "User: ${{ secrets.REGISTRY_USER }}"
+
+			- name: Build CI Docker image
+				run: docker build -t ci-java -f devops/ci.Dockerfile .
+
+			- name: Run lint and tests in CI container
+				run: |
+					docker run --rm \
+						-v ${{ github.workspace }}:/app \
+						-w /app \
+						ci-java \
+						make lint test
