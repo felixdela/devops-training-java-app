@@ -86,4 +86,4 @@ jobs:
 
       - name: Build application Docker image
         run: |
-          docker build -t $IMAGE_NAME .
+          docker build -t $IMAGE_NAME -f $APP_DOCKERFILE .
