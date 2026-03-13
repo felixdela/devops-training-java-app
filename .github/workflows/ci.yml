@@ -30,6 +30,7 @@ on:
 env:
   IMAGE_NAME: devops-training-java-app
   APP_URL: https://dev.example.com
+  APP_DOCKERFILE: devops/Dockerfile
 
 jobs:
   ci:
