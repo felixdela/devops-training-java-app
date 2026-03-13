@@ -85,3 +85,6 @@ jobs:
             -w /app \
             ci-java \
             make lint test
+      - name: Build application Docker image
+	run: |
+	  docker build -t $IMAGE_NAME .
