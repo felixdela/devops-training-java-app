@@ -101,9 +101,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Simulated deployment
+      - name: Start application with Docker Compose
         run: |
-          echo "Starting CD job..."
-          echo "Branch: ${{ github.ref_name }}"
-          echo "Deploy environment: ${{ inputs.DEPLOY_ENV }}"
-          echo "Deploying application (simulation)"
+          docker compose up -d
+
+      - name: Show container logs
+        run: |
+          docker compose logs
+
+      - name: Cleanup containers
+        if: always()
+        run: |
+          docker compose down -v
